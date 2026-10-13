@@ -65,7 +65,7 @@ The Ireland Energy Analytics Dashboard provides:
 
 ### Dashboard Preview
 
-![Ireland Energy Analytics Dashboard](screenshots/powerbi_dashboard.png)
+![Ireland Energy Analytics Dashboard](screenshots/powerbi_dashboard.png.png)
 
 
 
