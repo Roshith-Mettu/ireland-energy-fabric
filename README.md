@@ -63,6 +63,12 @@ The Ireland Energy Analytics Dashboard provides:
 - Primary Energy Supply by Fuel Type
 - Year filtering
 
+### Dashboard Preview
+
+![Ireland Energy Analytics Dashboard](screenshots/powerbi_dashboard.png)
+
+
+
 ### 2024 Dashboard Results
 - Total primary energy supply: 24,186.71 ktoe
 - Fuel types displayed in the KPI: 40
