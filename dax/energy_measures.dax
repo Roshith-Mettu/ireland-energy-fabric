@@ -1,0 +1,48 @@
+
+-- Ireland Energy Analytics Dashboard
+-- Power BI DAX Measures
+
+-- 1. Total Energy
+Total Energy (ktoe) =
+SUM(
+    gold_primary_energy_supply[total_energy_ktoe]
+)
+
+-- 2. Top Fuel Type
+Top Fuel Type =
+VAR TopFuel =
+    TOPN(
+        1,
+        ALLSELECTED(
+            gold_primary_energy_supply[fuel_type]
+        ),
+        [Total Energy (ktoe)],
+        DESC
+    )
+RETURN
+    CONCATENATEX(
+        TopFuel,
+        gold_primary_energy_supply[fuel_type],
+        ", "
+    )
+
+-- 3. Renewable Energy Share
+Renewable Energy Share =
+VAR RenewableTotal =
+    CALCULATE(
+        [Total Energy (ktoe)],
+        REMOVEFILTERS(
+            gold_primary_energy_supply[fuel_type]
+        ),
+        gold_primary_energy_supply[fuel_type]
+            = "Renewables"
+    )
+VAR AllEnergy =
+    CALCULATE(
+        [Total Energy (ktoe)],
+        REMOVEFILTERS(
+            gold_primary_energy_supply[fuel_type]
+        )
+    )
+RETURN
+    DIVIDE(RenewableTotal, AllEnergy, 0)
