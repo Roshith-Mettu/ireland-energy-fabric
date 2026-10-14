@@ -1,6 +1,7 @@
 
 -- Ireland Energy Analytics Dashboard
 -- Power BI DAX Measures
+-- Source: gold_primary_energy_supply
 
 -- 1. Total Energy
 Total Energy (ktoe) =
@@ -8,35 +9,28 @@ SUM(
     gold_primary_energy_supply[total_energy_ktoe]
 )
 
--- 2. Top Fuel Type
-Top Fuel Type =
-VAR TopFuel =
-    TOPN(
-        1,
-        ALLSELECTED(
-            gold_primary_energy_supply[fuel_type]
-        ),
-        [Total Energy (ktoe)],
-        DESC
-    )
-RETURN
-    CONCATENATEX(
-        TopFuel,
-        gold_primary_energy_supply[fuel_type],
-        ", "
-    )
+-- 2. Distinct Fuel Types
+Distinct Fuel Types =
+DISTINCTCOUNT(
+    gold_primary_energy_supply[fuel_type]
+)
 
--- 3. Renewable Energy Share
-Renewable Energy Share =
-VAR RenewableTotal =
-    CALCULATE(
-        [Total Energy (ktoe)],
-        REMOVEFILTERS(
-            gold_primary_energy_supply[fuel_type]
-        ),
+-- 3. Renewable Energy
+Renewable Energy (ktoe) =
+CALCULATE(
+    [Total Energy (ktoe)],
+    REMOVEFILTERS(
         gold_primary_energy_supply[fuel_type]
-            = "Renewables"
+    ),
+    FILTER(
+        ALL(gold_primary_energy_supply[fuel_type]),
+        LOWER(TRIM(gold_primary_energy_supply[fuel_type]))
+            = "renewables"
     )
+)
+
+-- 4. Renewable Energy Share
+Renewable Energy Share =
 VAR AllEnergy =
     CALCULATE(
         [Total Energy (ktoe)],
@@ -45,4 +39,31 @@ VAR AllEnergy =
         )
     )
 RETURN
-    DIVIDE(RenewableTotal, AllEnergy, 0)
+    DIVIDE(
+        [Renewable Energy (ktoe)],
+        AllEnergy,
+        0
+    )
+
+-- 5. Top Fuel Type
+Top Fuel Type =
+VAR FuelRanking =
+    ADDCOLUMNS(
+        ALLSELECTED(
+            gold_primary_energy_supply[fuel_type]
+        ),
+        "@Energy", [Total Energy (ktoe)]
+    )
+VAR TopFuel =
+    TOPN(
+        1,
+        FuelRanking,
+        [@Energy], DESC,
+        gold_primary_energy_supply[fuel_type], ASC
+    )
+RETURN
+    CONCATENATEX(
+        TopFuel,
+        gold_primary_energy_supply[fuel_type],
+        ", "
+    )
