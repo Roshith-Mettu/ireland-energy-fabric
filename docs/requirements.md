@@ -1,80 +1,145 @@
-# Ireland Energy & Emissions Analytics Platform
+# Ireland Energy Analytics | Microsoft Fabric
 
 ## Business Requirements Document
 
-## 1. Client Brief
-An Irish energy advisory team prepares reports from separate SEAI and EPA
-spreadsheets. It needs a repeatable analytics platform to compare energy
-consumption and emissions trends, explore reduction scenarios, and identify
-unreliable data before publishing.
+### 1. Project Overview
 
-## 2. Users
-### Analyst
-Uses the platform to investigate energy consumption and emissions trends.
+This project demonstrates an end-to-end data engineering and business intelligence solution for analysing Ireland's energy supply using publicly available Sustainable Energy Authority of Ireland (SEAI) data.
 
-### Reporting Manager
-Uses the Power BI report to monitor KPIs and trends.
+The solution uses Microsoft Fabric, OneLake, Dataflow Gen2, PySpark, Delta Lake, SQL and Power BI to transform source energy data into a reporting-ready analytical dataset.
 
-### Platform Maintainer
-Maintains data ingestion, transformations, data-quality checks and pipeline
-execution.
+**Project status:** Core SEAI energy analytics workflow implemented and validated for the 2024 reporting year.
 
-## 3. Business Questions
-1. Which sectors consume the most energy?
-2. Which sectors show the largest emissions changes?
-3. How has the energy mix changed?
-4. What would emissions look like under different annual reduction assumptions?
-5. Can a user trace a dashboard value back to its source?
-6. Can the pipeline handle revised files and bad data reliably?
+### 2. Business Objectives
 
-## 4. KPI Definitions
-### Final Energy Consumption
+- Build a repeatable data transformation workflow using Microsoft Fabric.
+- Organise energy data using Bronze, Silver and Gold architecture.
+- Transform and aggregate energy supply data by year and fuel type.
+- Validate completeness, uniqueness and energy totals.
+- Create an interactive Power BI dashboard for energy mix analysis.
+- Document processing steps and validation results in GitHub.
 
-- Name: Final Energy Consumption
-- Unit: GWh
-- Source: SEAI National Energy Balance
-- Includes: Final consumption detail rows
-- Excludes: Primary energy, subtotals and totals
+### 3. Data Source
 
-## 5. Source Coverage and Limitations
-### SEAI
-Source: SEAI National Energy Balance
-The exact years, units, release date and source structure will be documented
-after inspecting the downloaded source file.
+**Source organisation:** Sustainable Energy Authority of Ireland (SEAI)
 
-### EPA
-Source: EPA Ireland Greenhouse Gas Emissions Inventory
-The exact years, units, release date and source structure will be documented
-after inspecting the downloaded source file.
+**Dataset:** National Energy Balance
 
-### Limitations
-This project uses publicly available national-level data.
-The final common analysis period will be selected after inspecting both
-datasets.
+**Reporting period demonstrated:** 2024
 
-## 6. Refresh Approach
+**Analytical focus:** Primary Energy Supply, including non-energy use.
 
-The platform will check for new source releases monthly.
-The source datasets contain annual data, so daily refreshes are not required.
-Each source release will be tracked using release information and ingestion
-metadata.
+**Reporting unit:** ktoe (kilotonnes of oil equivalent)
 
-## 7. Security Requirements
+The exact source release, download URL and licensing information should be recorded in the source documentation.
 
-The Power BI semantic model will use Row-Level Security (RLS) to demonstrate
-restricted access to selected sectors.
-Security will be tested before the project is considered complete.
-Direct access to the Lakehouse and SQL endpoint will be documented separately
-from Power BI semantic-model security.
+### 4. Data Architecture
 
-## 8. Acceptance Criteria
+**Bronze Layer — Raw Data**
 
-The project will be considered complete when:
-1. Source values can be reconciled with report values.
-2. Running the same file twice does not create duplicates.
-3. A revised source release updates current reporting while preserving history.
-4. Blocking data-quality failures prevent publication.
-5. Sector filters work correctly.
-6. Row-Level Security works for the tested role.
-7. Scenario calculations match manual calculations.
-8. Another person can follow the README and understand how the project works.
+- Stores source files in the Microsoft Fabric Lakehouse.
+- Provides the starting point for the data transformation workflow.
+
+**Silver Layer — Cleaned Data**
+
+- Uses Microsoft Fabric Dataflow Gen2.
+- Produces the `seai_energy_balance_silver` table.
+- Supports SQL-based data quality checks.
+
+**Gold Layer — Analytical Data**
+
+- Uses a PySpark notebook.
+- Filters records to Primary Energy Supply, including non-energy use.
+- Groups data by year and fuel type.
+- Aggregates energy values in ktoe.
+- Stores the result in the Delta table `gold_primary_energy_supply`.
+
+### 5. Pipeline Orchestration
+
+**Pipeline:** `pl_ireland_energy_etl`
+
+The pipeline runs two activities in sequence:
+
+1. `Run_SEAI_Silver` — Executes the Silver Dataflow Gen2 transformation.
+2. `Run_Gold_Energy` — Executes the Gold PySpark notebook after successful Silver processing.
+
+A successful execution of both activities has been verified and documented.
+
+### 6. Reporting Requirements
+
+The Power BI dashboard supports:
+
+- Total Primary Energy Supply in ktoe.
+- Fuel-type analysis.
+- Identification of the largest fuel category.
+- Renewable energy share.
+- Year filtering.
+
+The demonstrated dashboard uses 2024 energy data.
+
+### 7. Data Quality Requirements
+
+The analytical dataset should be checked for:
+
+- Missing fuel-type values.
+- Missing energy values.
+- Duplicate year and fuel-type combinations.
+- Negative energy values.
+- Differences between Silver and Gold totals.
+- Correct renewable energy share calculations.
+
+**Validated results for 2024:**
+
+| Metric | Result |
+|---|---|
+| Gold records | 40 |
+| Distinct fuel types | 40 |
+| Missing fuel types | 0 |
+| Missing energy values | 0 |
+| Duplicate year/fuel combinations | 0 |
+| Negative energy values | 4 |
+| Silver energy total | 24,186.71 ktoe |
+| Gold energy total | 24,186.71 ktoe |
+| Renewable energy share | 8.64% |
+
+The four negative values are retained and documented for source-level interpretation rather than automatically removed.
+
+### 8. Acceptance Criteria
+
+The implemented workflow is considered technically validated when:
+
+1. The Silver transformation executes successfully.
+2. The Gold notebook executes after successful Silver processing.
+3. The Gold Delta table is created and can be queried.
+4. No missing fuel types or energy values are found in the tested dataset.
+5. No duplicate year and fuel-type combinations are found.
+6. Silver and Gold totals reconcile.
+7. The renewable energy share matches the SQL validation.
+8. The Power BI dashboard displays the analytical results.
+9. Pipeline and validation evidence are documented in GitHub.
+
+These checks have supporting evidence from the completed 2024 workflow.
+
+### 9. Known Limitations
+
+- The demonstrated analysis covers 2024.
+- Negative energy values require source-level interpretation.
+- The current reporting scope is Primary Energy Supply, not Final Energy Consumption.
+- Automated scheduling and incremental ingestion have not been verified.
+- Repeated-file ingestion, source-release versioning and historical preservation have not been verified.
+- The project does not currently demonstrate EPA emissions integration, scenario modelling or Row-Level Security.
+
+### 10. Future Enhancements
+
+Potential future improvements include:
+
+- Integrating EPA greenhouse gas emissions datasets.
+- Adding multiple reporting years and trend analysis.
+- Introducing scheduled ingestion and refresh.
+- Implementing source-release tracking and incremental processing.
+- Adding sector-level reporting.
+- Implementing scenario modelling.
+- Demonstrating Power BI Row-Level Security.
+- Adding automated blocking data quality rules.
+
+These are future enhancements, not completed project features.
