@@ -204,19 +204,24 @@ To reproduce the workflow:
 
 ## Evidence
 
-The `screenshots/` folder contains supporting evidence for:
+The following screenshots demonstrate the completed
+Microsoft Fabric implementation and validation.
 
-![Gold Layer Validation](screenshots/gold_layer_validation%201%20.png.png)
+### Gold Layer Validation
 
-![Gold Layer Validation](screenshots/gold_layer_validation%202%20.png.png)
+- [Gold Validation — Screenshot 1](screenshots/gold_layer_validation%201%20.png.png)
+- [Gold Validation — Screenshot 2](screenshots/gold_layer_validation%202%20.png.png)
+- [Gold Validation — Screenshot 3](screenshots/gold_layer_validation%203%20.png.png)
 
-![Gold Layer Validation](screenshots/gold_layer_validation%203%20.png.png)
+### Lakehouse and Pipeline
 
-![Gold Lakehouse Table](screenshots/gold_lakehouse_table.png.png)
+- [Gold Lakehouse Table](screenshots/gold_lakehouse_table.png.png)
+- [Successful ETL Pipeline Execution](screenshots/pipeline_execution_success.png.png)
 
-![Successful Pipeline Execution](screenshots/pipeline_execution_success.png.png)
+### Power BI
 
-![Power BI Dashboard](screenshots/powerbi_dashboard.png.png)
+- [Ireland Energy Analytics Dashboard](screenshots/powerbi_dashboard.png.png)
+
 
 ## Known Limitations
 
