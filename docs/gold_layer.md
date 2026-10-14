@@ -1,42 +1,45 @@
+# Gold Layer – SEAI Energy Analysis
 
-# Gold Layer - SEAI Energy Analysis
+## 1. Overview
 
-## Overview
+The Gold Layer prepares aggregated analytical data from the cleaned SEAI National Energy Balance dataset using Microsoft Fabric PySpark.
 
-The Gold layer contains the aggregated energy data prepared from the cleaned SEAI Energy Balance dataset.
+The transformation focuses on **Primary Energy Supply (including non-energy use)** for 2024.
 
-I used PySpark in Microsoft Fabric to read the Silver table, select the primary energy supply records, and calculate total energy values for each fuel type.
+The output is stored in a Delta table and used for SQL validation and Power BI reporting.
 
-The output is stored as a Delta table in the same Fabric Lakehouse. This table will be used for further analysis and Power BI reporting.
+## 2. Microsoft Fabric Components
 
-## Data source
+- **Workspace:** `ws_ireland_energy`
+- **Lakehouse:** `lh_ireland_energy`
+- **Source table:** `dbo.seai_energy_balance_silver`
+- **Gold table:** `dbo.gold_primary_energy_supply`
+- **Notebook:** `nb_gold_energy`
+- **Pipeline:** `pl_ireland_energy_etl`
+- **Processing technology:** PySpark and Delta Lake
+- **Reporting year:** 2024
+- **Unit:** ktoe (kilotonnes of oil equivalent)
 
-The Gold layer uses the Silver table created earlier in the project.
+## 3. Source Schema
 
-- Lakehouse: `lh_ireland_energy`
-- Source table: `dbo.seai_energy_balance_silver`
-- Dataset: SEAI National Energy Balance 2024
-- Processing tool: Microsoft Fabric Notebook (PySpark)
-- Notebook: `nb_gold_energy.ipynb`
+The Silver table provides four fields:
 
-The Silver table contains cleaned energy balance records with the following columns:
+| Column | Description |
+|---|---|
+| energy_balance_item | Energy balance classification |
+| year | Reporting year |
+| fuel_type | Fuel or energy category |
+| energy_ktoe | Energy value measured in ktoe |
 
-- `energy_balance_item`
-- `year`
-- `fuel_type`
-- `energy_ktoe`
+## 4. Gold Layer Transformation
 
-## Gold transformation
+The notebook performs three primary operations:
 
-For this stage, I focused on Primary Energy Supply, including non-energy use.
+1. Reads the cleaned Silver Delta table.
+2. Filters the energy balance classification to `Primary Energy Supply (incl non-energy)`.
+3. Groups records by year and fuel type, summing the energy values.
 
-The Silver dataset was filtered using the energy balance item:
-
-`Primary Energy Supply (incl non-energy)`
-
-After filtering, I grouped the records by year and fuel type and calculated the sum of `energy_ktoe`.
-
-The resulting table contains one aggregated record for each year and fuel type combination.
+### PySpark Transformation
 
 ```python
 from pyspark.sql import functions as F
@@ -56,9 +59,9 @@ gold = (
 )
 ```
 
-## Saving the Gold table
+## 5. Saving the Gold Table
 
-I saved the aggregated DataFrame as a Delta table using overwrite mode.
+The aggregated DataFrame is written to the Fabric Lakehouse as a Delta table.
 
 ```python
 gold.write.format("delta") \
@@ -66,51 +69,123 @@ gold.write.format("delta") \
     .saveAsTable("dbo.gold_primary_energy_supply")
 ```
 
-The Gold table is available in the Lakehouse under:
+The output is available at:
 
 `Tables / dbo / gold_primary_energy_supply`
 
-## Validation
+Overwrite mode replaces the target table's current data during execution. This does not independently demonstrate source-release history preservation or incremental ingestion.
 
-After creating the table, I checked the output using the Fabric notebook.
+## 6. Gold Table Schema
 
-The table was created successfully and the Spark execution completed without errors.
-
-The validation returned:
-
-- Total records: 40
-- Total columns: 3
-- Year available in the dataset: 2024
-- Spark validation jobs: 7 of 7 succeeded
-
-The Gold table contains the following columns:
-
-| Column | Data type | Description |
+| Column | Data Type | Description |
 |---|---|---|
 | year | Long | Reporting year |
-| fuel_type | String | Energy source or fuel category |
+| fuel_type | String | Fuel or energy category |
 | total_energy_ktoe | Double | Aggregated energy value in ktoe |
 
-The output was also checked by displaying the aggregated records.
+## 7. Data Validation
 
-Some of the largest values in the results were:
+The Gold Layer was checked using PySpark and SQL.
 
-| Fuel type | Energy (ktoe) |
+### Structural Validation
+
+| Check | Result |
+|---|---|
+| Reporting year | 2024 |
+| Total Gold records | 40 |
+| Distinct fuel types | 40 |
+| Total columns | 3 |
+| Missing fuel types | 0 |
+| Missing energy values | 0 |
+| Duplicate year/fuel combinations | 0 |
+| Negative energy values | 4 |
+
+Four negative energy values were identified during validation. They were retained rather than automatically removed, pending source-level interpretation.
+
+### Silver-to-Gold Reconciliation
+
+The Gold energy total was compared with the Silver energy total for the same Primary Energy Supply classification.
+
+| Metric | Result |
 |---|---:|
-| Oil | 7161.71 |
-| Natural Gas | 4273.75 |
-| Gasoil / Diesel / DERV | 3051.06 |
-| Renewables | 2089.95 |
-| Crude | 2038.36 |
+| Filtered Silver energy total | 24,186.71 ktoe |
+| Gold aggregated energy total | 24,186.71 ktoe |
+| Difference | 0.00 ktoe |
 
-These values are based on the 2024 Primary Energy Supply records. Some fuel categories represent broader totals or overlapping classifications, so they should not automatically be treated as mutually exclusive shares of national energy supply.
+The matching totals demonstrate that the Gold aggregation preserves the summed values of the selected Silver records.
 
-## Output and next steps
+### Renewable Energy Validation
 
-The Gold table is ready to be used as a reporting source.
+| Metric | Result |
+|---|---:|
+| Renewables category | 2,089.95 ktoe |
+| Aggregated energy total | 24,186.71 ktoe |
+| Calculated renewable share | 8.64% |
 
-The next stage of the project is to connect Power BI to the Fabric Lakehouse and create visualisations showing energy supply by fuel type.
+The renewable share is calculated as:
 
-The initial report will focus on comparing fuel categories and identifying the largest energy supply values for 2024.
+`Renewables category energy / Total aggregated energy × 100`
 
-The transformation code is available in `notebooks/nb_gold_energy.ipynb`.
+This percentage describes the share of the aggregated selected records, not necessarily the official national renewable energy share.
+
+The SQL validation used normalised fuel-type text to handle case and whitespace differences.
+
+## 8. Example Gold Records
+
+Selected high-value records from the 2024 output:
+
+| Fuel Type | Energy (ktoe) |
+|---|---:|
+| Oil | 7,161.71 |
+| Natural Gas | 4,273.75 |
+| Gasoil / Diesel / DERV | 3,051.06 |
+| Renewables | 2,089.95 |
+| Crude | 2,038.36 |
+
+Some fuel categories may represent totals or overlapping classifications. These records should not automatically be interpreted as mutually exclusive components of the national energy mix.
+
+## 9. Pipeline Integration
+
+The Gold Layer is executed as part of the Fabric pipeline `pl_ireland_energy_etl`.
+
+The pipeline contains two sequential activities:
+
+1. `Run_SEAI_Silver` – Executes the Dataflow Gen2 Silver transformation.
+2. `Run_Gold_Energy` – Executes the Gold PySpark notebook after successful completion of the Silver activity.
+
+Both activities completed successfully in the recorded pipeline execution.
+
+## 10. Power BI Integration
+
+The Gold table is used for the Ireland Energy Analytics Power BI dashboard.
+
+The demonstrated dashboard includes:
+
+- Total aggregated energy in ktoe.
+- Distinct fuel-type count.
+- Largest fuel category.
+- Renewable category share.
+- Energy values by fuel type.
+- Reporting year filter.
+
+The Power BI project file is available at:
+
+`powerbi/Ireland Energy Analytics Dashboard.pbix`
+
+## 11. Limitations
+
+- The demonstrated dataset covers 2024.
+- Four negative values require source-level interpretation.
+- Some fuel categories may overlap or represent subtotals.
+- The summed Gold value should not be presented as an independently verified national energy supply total.
+- The renewable percentage is calculated from the selected aggregated records.
+- Incremental processing and historical release preservation have not been demonstrated.
+- The workflow does not currently include EPA emissions integration or scenario modelling.
+
+## 12. Outcome
+
+The Gold Layer successfully transforms Silver energy balance data into an aggregated Delta table using PySpark.
+
+The output contains 40 records for 2024, with no missing values or duplicate year/fuel combinations in the tested results.
+
+The Silver and Gold aggregation totals reconcile, and the data is available for SQL analysis and Power BI reporting.
