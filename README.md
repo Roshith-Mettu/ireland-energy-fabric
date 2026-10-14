@@ -153,7 +153,7 @@ Both activities completed successfully.
 
 ### Validation Evidence
 
-![Gold Layer Validation](screenshots/gold_layer_validation%201.png.png)
+![Gold Layer Validation](screenshots/gold_layer_validation 1 .png.png)
 
 ![Gold Lakehouse Table](screenshots/gold_lakehouse_table.png.png)
 
