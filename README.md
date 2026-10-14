@@ -1,157 +1,210 @@
 # Ireland Energy Analytics | Microsoft Fabric End-to-End Project
 
 ## Project Overview
-An end-to-end data engineering and business intelligence project analyzing Ireland's primary energy supply using Microsoft Fabric, SQL, PySpark, Dataflow Gen2, and Power BI.
 
-The solution implements a Bronze–Silver–Gold data architecture, automated ETL orchestration, data quality validation, and interactive energy reporting.
+An end-to-end data engineering and business intelligence portfolio project analysing Ireland's 2024 primary energy supply data using Microsoft Fabric, Dataflow Gen2, PySpark, SQL, Delta Lake and Power BI.
+
+The solution demonstrates Bronze–Silver–Gold architecture, orchestrated data transformations, SQL-based data quality validation and interactive energy reporting.
+
+**Project status:** Core SEAI energy analytics workflow completed and validated for 2024.
 
 ## Technology Stack
-- Microsoft Fabric
-- OneLake and Lakehouse
-- Dataflow Gen2 / Power Query
+
+- Microsoft Fabric and OneLake
+- Fabric Lakehouse and Delta Lake
+- Dataflow Gen2 and Power Query
 - PySpark and Fabric Notebooks
-- Delta Lake
-- SQL
-- Power BI and DAX
 - Fabric Data Pipelines
+- SQL and Spark SQL
+- Power BI and DAX
 - GitHub
 
 ## Data Source
-SEAI National Energy Balance data, with a primary energy supply analysis for 2024. The project also includes Bronze ingestion folders for SEAI and EPA data.
+
+**Organisation:** Sustainable Energy Authority of Ireland (SEAI)
+
+**Dataset:** National Energy Balance
+
+**Reporting year:** 2024
+
+**Analytical classification:** Primary Energy Supply (incl non-energy)
+
+**Unit:** ktoe (kilotonnes of oil equivalent)
+
+The Fabric environment also contains Bronze ingestion folders for SEAI and EPA data. However, the demonstrated analytical pipeline and dashboard use SEAI data only.
+
+EPA emissions analysis is outside the completed project scope.
 
 ## Data Architecture
-Source Data
-    |
-    v
-Bronze Layer - Raw Data in Fabric Lakehouse
-    |
-    v
-Silver Layer - Dataflow Gen2 Cleaning and Transformation
-    |
-    v
-Gold Layer - PySpark Aggregation and Analytical Tables
-    |
-    v
-Semantic Model - Power BI DAX Measures
-    |
-    v
-Power BI - Ireland Energy Analytics Dashboard
+
+```text
+SEAI National Energy Balance
+           |
+           v
+Bronze Layer
+Raw source data in Fabric Lakehouse
+           |
+           v
+Silver Layer
+Dataflow Gen2: df_seai_silver
+Table: dbo.seai_energy_balance_silver
+           |
+           v
+Gold Layer
+PySpark Notebook: nb_gold_energy
+Table: dbo.gold_primary_energy_supply
+           |
+           v
+Power BI Semantic Model
+DAX Measures
+           |
+           v
+Ireland Energy Analytics Dashboard
+```
+
+### Bronze Layer
+
+Stores the raw source data used by the Fabric transformation workflow.
+
+### Silver Layer
+
+The Dataflow Gen2 transformation prepares structured energy balance data by applying column transformations, type conversions, unpivoting and filtering.
+
+The resulting table is `dbo.seai_energy_balance_silver`.
+
+### Gold Layer
+
+The PySpark notebook filters the Silver table to Primary Energy Supply (including non-energy use), groups records by year and fuel type, and calculates aggregated energy values.
+
+The resulting Delta table is `dbo.gold_primary_energy_supply`.
 
 ## Data Pipeline
-Pipeline: `pl_ireland_energy_etl`
 
-1. `Run_SEAI_Silver` executes the Dataflow Gen2 transformation `df_seai_silver`.
-2. On successful completion, `Run_Gold_Energy` executes the Fabric notebook `nb_gold_energy`.
-3. The pipeline was validated and executed successfully, with both activities reporting Succeeded.
+**Pipeline:** `pl_ireland_energy_etl`
 
-Execution evidence is available in the `pipelines/` and `screenshots/` folders.
+The pipeline runs two activities sequentially:
 
-## Data Quality
-SQL validation includes:
-- Total records and energy reconciliation
-- Duplicate detection
-- Data quality checks on transformed tables
+1. `Run_SEAI_Silver` — Executes Dataflow Gen2 `df_seai_silver`.
+2. `Run_Gold_Energy` — Executes the PySpark notebook `nb_gold_energy` after successful Silver processing.
 
-See `sql/energy_validation.sql` and the other SQL scripts.
+Both activities completed successfully in the recorded pipeline execution.
+
+Execution evidence is included in the `pipelines/` and `screenshots/` folders.
+
+## Data Quality Validation
+
+The project includes SQL validation of the Silver and Gold analytical datasets.
+
+Checks include:
+
+- Total record counts and distinct fuel types.
+- Missing or blank values.
+- Duplicate business keys.
+- Unexpected reporting years.
+- Negative energy value inspection.
+- Silver-to-Gold energy reconciliation.
+- Renewable category share calculation.
+
+### Verified Gold Layer Results — 2024
+
+| Validation | Result |
+|---|---:|
+| Gold records | 40 |
+| Distinct fuel types | 40 |
+| Missing fuel types | 0 |
+| Missing energy values | 0 |
+| Duplicate year/fuel combinations | 0 |
+| Unexpected reporting year records | 0 |
+| Negative energy values | 4 |
+| Filtered Silver total | 24,186.71 ktoe |
+| Gold aggregated total | 24,186.71 ktoe |
+| Reconciliation difference | 0.00 ktoe |
+| Renewables category | 2,089.95 ktoe |
+| Renewable category share | 8.64% |
+
+The Silver and Gold totals reconcile for the selected energy balance classification.
+
+Four negative values were retained for source-level interpretation rather than automatically removed.
+
+The validation demonstrates consistency of the tested transformations; it does not independently verify every source value.
 
 ## Power BI Dashboard
+
 The Ireland Energy Analytics Dashboard provides:
-- Total Primary Energy Supply
-- Total Fuel Types
-- Top Fuel Type
-- Renewable Energy Share
-- Primary Energy Supply by Fuel Type
-- Year filtering
+
+- Total aggregated energy in ktoe.
+- Distinct fuel-type count.
+- Largest fuel category.
+- Renewable category share.
+- Energy values by fuel type.
+- Reporting year filtering.
 
 ### Dashboard Preview
 
 ![Ireland Energy Analytics Dashboard](screenshots/powerbi_dashboard.png.png)
 
+### Dashboard Results — 2024
 
+| KPI | Value |
+|---|---:|
+| Total aggregated energy | 24,186.71 ktoe |
+| Fuel types | 40 |
+| Largest fuel category | Oil |
+| Renewable category share | 8.64% |
 
-### 2024 Dashboard Results
-- Total primary energy supply: 24,186.71 ktoe
-- Fuel types displayed in the KPI: 40
-- Top fuel type: Oil
-- Renewable energy share: 8.64%
+The renewable percentage is calculated using the Renewables category divided by the total of the selected aggregated Gold records.
 
-The renewable share measure uses the Renewables fuel category divided by total primary energy supply.
+Because some fuel categories may overlap or represent broader classifications, these totals and percentages should not automatically be interpreted as official national energy mix statistics.
 
-The report file is available at:
-`powerbi/Ireland Energy Analytics Dashboard.pbix`
+**Power BI report:** `powerbi/Ireland Energy Analytics Dashboard.pbix`
 
 ## Repository Structure
+
 ```text
 ireland-energy-fabric/
 ├── dax/
+│   └── energy_measures.dax
 ├── docs/
+│   ├── requirements.md
+│   ├── silver_layer.md
+│   └── gold_layer.md
 ├── notebooks/
+│   └── nb_gold_energy.ipynb
 ├── pipelines/
 ├── powerbi/
+│   └── Ireland Energy Analytics Dashboard.pbix
 ├── sample_data/
 ├── screenshots/
 ├── sql/
+│   ├── 01_silver_quality_checks.sql
+│   └── energy_validation.sql
 └── README.md
 ```
 
-## Project Deliverables
-- Fabric Lakehouse with Bronze, Silver, and Gold data processing
-- Dataflow Gen2 transformations
-- PySpark notebook processing
-- SQL validation scripts
-- DAX measures
-- Power BI report
-- Successfully executed Fabric ETL pipeline
-- GitHub project documentation and execution evidence
+Additional folder-level README files provide supporting documentation.
 
-## Future Improvements
-- Configure and test scheduled pipeline execution
-- Add automated quality alerts
-- Expand year-over-year reporting
-- Add additional EPA emissions analysis
+## Reproducing the Project
 
-## Author
-Roshith Mettu
+The repository provides implementation code, documentation, validation queries and execution evidence.
 
-Data Analytics | Microsoft Fabric | SQL | Power BI | PySpark
+To reproduce the workflow:
 
-## Final Data Quality Validation
+1. Create a Microsoft Fabric workspace and Lakehouse.
+2. Obtain the relevant SEAI National Energy Balance source file.
+3. Configure the source ingestion and Dataflow Gen2 transformations described in the documentation.
+4. Create the Silver Delta table.
+5. Import or recreate the Gold PySpark notebook and attach the correct Lakehouse.
+6. Execute the notebook to generate the Gold Delta table.
+7. Run the SQL validation scripts.
+8. Configure the Fabric pipeline with the Silver Dataflow and Gold notebook activities.
+9. Open the Power BI report and configure its data connection to the recreated Gold table.
+10. Validate the report measures against the SQL outputs.
 
-The Ireland Energy Analytics project includes SQL-based quality checks to verify data completeness, consistency, uniqueness, and accuracy across the Silver and Gold layers.
+**Reproducibility limitation:** The repository does not yet provide a fully automated deployment package or all source-ingestion configuration details. Some Fabric resources must be recreated or configured manually.
 
-### Validation Results — 2024
+## Evidence
 
-| Validation Check | Result | Status |
-|---|---|---|
-| Gold Layer records | 40 | Passed |
-| Unique fuel types | 40 | Passed |
-| Null fuel types | 0 | Passed |
-| Null energy values | 0 | Passed |
-| Duplicate year/fuel combinations | 0 | Passed |
-| Silver–Gold energy reconciliation | 24,186.71 ktoe in both layers | Passed |
-| Total primary energy supply | 24,186.71 ktoe | Passed |
-| Renewable energy | 2,089.95 ktoe | Passed |
-| Renewable energy share | 8.64% | Passed |
-| Fabric ETL pipeline | Both activities succeeded | Passed |
-
-### Negative Energy Values
-
-Four negative energy values were identified during validation.
-
-These values were retained rather than automatically removed because negative entries may represent legitimate adjustments within energy balance reporting.
-
-Further verification against the original SEAI source definitions is required to confirm their meaning.
-
-### Pipeline Execution
-
-The Microsoft Fabric pipeline `pl_ireland_energy_etl` successfully executed the following activities in sequence:
-
-1. `Run_SEAI_Silver` — Dataflow Gen2 transformation.
-2. `Run_Gold_Energy` — PySpark Gold Layer aggregation.
-
-Both activities completed successfully.
-
-### Validation Evidence
+The `screenshots/` folder contains supporting evidence for:
 
 ![Gold Layer Validation](screenshots/gold_layer_validation%201%20.png.png)
 
@@ -165,9 +218,35 @@ Both activities completed successfully.
 
 ![Power BI Dashboard](screenshots/powerbi_dashboard.png.png)
 
-### Final Outcome
+## Known Limitations
 
-The project demonstrates an end-to-end Microsoft Fabric analytics workflow using Dataflow Gen2, Lakehouse, PySpark, SQL, Delta tables, pipeline orchestration, and Power BI.
+- The demonstrated analysis covers 2024 only.
+- Fuel classifications may overlap or contain subtotals.
+- Four negative energy values require source-level interpretation.
+- Scheduled pipeline execution has not been verified.
+- Incremental ingestion and source-release history preservation have not been demonstrated.
+- The GitHub DAX file documents report measures but does not automatically update the Power BI report.
+- EPA emissions integration, scenario modelling and Row-Level Security are outside the demonstrated scope.
 
-The validated 2024 energy dataset supports reporting on Ireland's primary energy supply and fuel mix. All tested reconciliation, completeness, and uniqueness checks passed, with negative energy entries documented for further source-level review.
+## Future Improvements
 
+- Add multi-year energy analysis.
+- Integrate EPA greenhouse gas emissions datasets.
+- Implement scheduled refresh and data quality alerts.
+- Add source-release tracking and incremental ingestion.
+- Introduce automated deployment and testing.
+- Extend reporting with sector analysis and scenario modelling.
+
+## Project Outcome
+
+This project demonstrates an operational Microsoft Fabric analytics workflow using Dataflow Gen2, PySpark, Delta tables, SQL validation, pipeline orchestration and Power BI.
+
+The 2024 Gold dataset contains 40 aggregated records. Silver and Gold totals reconcile, and the tested completeness and uniqueness checks passed.
+
+The repository documents the implemented workflow, validation evidence and known limitations.
+
+## Author
+
+Roshith Mettu
+
+Data Analytics | Microsoft Fabric | SQL | Power BI | PySpark
