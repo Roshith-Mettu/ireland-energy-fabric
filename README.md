@@ -202,23 +202,34 @@ To reproduce the workflow:
 
 **Reproducibility limitation:** The repository does not yet provide a fully automated deployment package or all source-ingestion configuration details. Some Fabric resources must be recreated or configured manually.
 
+
 ## Evidence
 
-The following screenshots demonstrate the completed
-Microsoft Fabric implementation and validation.
+Screenshots of the Microsoft Fabric implementation,
+data quality checks, pipeline execution and Power BI dashboard.
 
-### Gold Layer Validation
+### Silver Layer
 
-- [Gold Validation — Screenshot 1](screenshots/gold_layer_validation%201%20.png.png)
-- [Gold Validation — Screenshot 2](screenshots/gold_layer_validation%202%20.png.png)
-- [Gold Validation — Screenshot 3](screenshots/gold_layer_validation%203%20.png.png)
+- [Dataflow Gen2 Transformations](screenshots/silver_dataflow_transformations.png.png)
+- [Silver Lakehouse Table](screenshots/silver_lakehouse_table.png.png)
+- [Silver SQL Analysis](screenshots/silver_sql_analysis.png.png)
+- [Silver Energy Analysis](screenshots/silver_energy_analysis.png.png)
+- [Silver Null Check](screenshots/silver_null_check.png.png)
+- [Silver Duplicate Check](screenshots/silver_duplicate_check.png.png)
 
-### Lakehouse and Pipeline
+### Gold Layer
 
 - [Gold Lakehouse Table](screenshots/gold_lakehouse_table.png.png)
-- [Successful ETL Pipeline Execution](screenshots/pipeline_execution_success.png.png)
+- [Gold Validation 1](screenshots/gold_layer_validation%201%20.png.png)
+- [Gold Validation 2](screenshots/gold_layer_validation%202%20.png.png)
+- [Gold Validation 3](screenshots/gold_layer_validation%203%20.png.png)
+- [Renewable Energy Validation](screenshots/final_renewable_validation.png.png)
 
-### Power BI
+### Pipeline Execution
+
+- [Successful Fabric ETL Pipeline](screenshots/pipeline_execution_success.png.png)
+
+### Power BI Dashboard
 
 - [Ireland Energy Analytics Dashboard](screenshots/powerbi_dashboard.png.png)
 
